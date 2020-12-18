@@ -1,5 +1,6 @@
 #include <napi.h>
 #include <dlfcn.h>
+#include <errno.h>
 #include "WeWorkFinanceSdk_C.h"
 #include <openssl/sha.h>
 #include <openssl/crypto.h>
@@ -44,12 +45,10 @@ Napi::Value InitSDK(const Napi::CallbackInfo &info)
 {
   if (!so_handle)
   {
-    so_handle = dlopen("./src/libWeWorkFinanceSdk_C.so", RTLD_LAZY);
+    std::string libfile = info[2].As<Napi::String>();
+    so_handle = dlopen(libfile.c_str(), RTLD_LAZY);
     if (!so_handle)
     {
-      // printf("load sdk fail: %s", dlerror());
-
-      // sprintf(errmsg, "%s", dlerror());
       Napi::Error::New(info.Env(), "load sdk fail: " + std::string(dlerror())).ThrowAsJavaScriptException();
       return Napi::Number::New(info.Env(), 1);
     }
@@ -68,7 +67,7 @@ Napi::Value InitSDK(const Napi::CallbackInfo &info)
       DestroySdk(sdk);
       // printf("init sdk err ret:%d\n", ret);
       // sprintf(errmsg, "init sdk err ret:%d\n", ret);
-      Napi::Error::New(info.Env(), +"init sdk err ret: " + std::string(dlerror())).ThrowAsJavaScriptException();
+      Napi::Error::New(info.Env(), +"init sdk err ret: " + std::to_string(ret)).ThrowAsJavaScriptException();
       return Napi::Number::New(info.Env(), 1);
       // return Napi::Number::New(info.Env(), -2);
     }
@@ -100,7 +99,7 @@ Napi::Value GetChatDataMethod(const Napi::CallbackInfo &info)
     // return Napi::Number::New(info.Env(), -3);
     // char errmsg[100];
     // sprintf(errmsg, "GetChatData error ret:%d\n", ret);
-    Napi::Error::New(info.Env(), "GetChatData error ret: " + std::string(dlerror())).ThrowAsJavaScriptException();
+    Napi::Error::New(info.Env(), "GetChatData error ret: " + std::to_string(ret)).ThrowAsJavaScriptException();
     return Napi::Number::New(info.Env(), 1);
   }
   // printf("GetChatData len:%d data:%s\n", chatDatas->len, chatDatas->buf);
@@ -127,8 +126,8 @@ Napi::String DecryptDataMethod(const Napi::CallbackInfo &info)
     FreeSlice(Msgs);
     // char errmsg[100];
     // sprintf(errmsg, "DecryptData error ret:%d\n", ret);
-    Napi::Error::New(info.Env(), "DecryptData error ret: " + std::string(dlerror())).ThrowAsJavaScriptException();
-    return Napi::String::New(info.Env(), "DecryptData error ret: " + std::string(dlerror()));
+    Napi::Error::New(info.Env(), "DecryptData error ret: " + std::to_string(ret)).ThrowAsJavaScriptException();
+    return Napi::String::New(info.Env(), "DecryptData error ret: " + std::to_string(ret));
     // printf("DecryptData err ret:%d\n", ret);
     // return Napi::String::New(info.Env(), "-3");
   }
@@ -156,7 +155,6 @@ Napi::Value GetMediaDataMethod(const Napi::CallbackInfo &info)
   while (isfinish == 0)
   {
     //每次使用GetMediaData拉取存档前需要调用NewMediaData获取一个mediaData，在使用完mediaData中数据后，还需要调用FreeMediaData释放。
-    printf("index:%s\n", index.c_str());
     MediaData_t *mediaData = newmediadata_fn();
     int ret = getmediadata_fn(sdk, index.c_str(), sdkfileid.c_str(), NULL, NULL, timeout, mediaData);
     if (ret != 0)
@@ -164,7 +162,8 @@ Napi::Value GetMediaDataMethod(const Napi::CallbackInfo &info)
       //单个分片拉取失败建议重试拉取该分片，避免从头开始拉取。
       freemediadata_fn(mediaData);
       printf("GetMediaData err ret:%d\n", ret);
-      return Napi::String::New(info.Env(), "fail");
+      Napi::Error::New(info.Env(), "GetMediaData err ret: " + std::to_string(ret)).ThrowAsJavaScriptException();
+      return Napi::Number::New(info.Env(), -1);
       // return -1;
     }
     // printf("content size:%d isfin:%d outindex:%s\n", mediaData->data_len, mediaData->is_finish, mediaData->outindexbuf);
@@ -175,8 +174,10 @@ Napi::Value GetMediaDataMethod(const Napi::CallbackInfo &info)
     // printf("filename:%s \n", file);
     if (NULL == fp)
     {
+      // errNum = errno;
       freemediadata_fn(mediaData);
-      printf("open file err\n");
+      Napi::Error::New(info.Env(), "Open file Error: " + std::to_string(errno)).ThrowAsJavaScriptException();
+      // printf("open file err\n");
       return Napi::String::New(info.Env(), "fail");
     }
 

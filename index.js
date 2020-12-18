@@ -1,12 +1,13 @@
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 const wework = require("./build/Release/wework.node");
-
 
 class WeWork {
   constructor(config) {
     const { corpid, secret, pk } = config;
     this.pk = pk;
-    wework.init(corpid, secret);
+    wework.init(corpid, secret, path.resolve(__dirname, "./lib/libWeWorkFinanceSdk_C.so"));
   }
 
   getChatData(seq, limit = 1000, timeout = 60) {
@@ -53,8 +54,8 @@ class WeWork {
   }
 
   getMediaData(id, savedFilepath) {
-    wework.getMediaData(id, savedFilepath)
-    return savedFilepath
+    wework.getMediaData(id, savedFilepath);
+    return savedFilepath;
   }
 }
 
