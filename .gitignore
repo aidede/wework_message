@@ -1,0 +1,6 @@
+private.pem
+test.js
+node_modules
+.vscode
+build/Release
+temp
