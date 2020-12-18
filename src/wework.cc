@@ -14,7 +14,7 @@ typedef void DestroySdk_t(WeWorkFinanceSdk_t *);
 typedef int GetChatData_t(WeWorkFinanceSdk_t *, unsigned long long, unsigned int, const char *, const char *, int, Slice_t *);
 typedef Slice_t *NewSlice_t();
 typedef void FreeSlice_t(Slice_t *);
-typedef char* GetContentFromSlice_t(Slice_t *);
+typedef char *GetContentFromSlice_t(Slice_t *);
 
 typedef int GetMediaData_t(WeWorkFinanceSdk_t *, const char *, const char *, const char *, const char *, int, MediaData_t *);
 typedef int DecryptData_t(const char *, const char *, Slice_t *);
@@ -47,9 +47,10 @@ Napi::Value InitSDK(const Napi::CallbackInfo &info)
     so_handle = dlopen("./src/libWeWorkFinanceSdk_C.so", RTLD_LAZY);
     if (!so_handle)
     {
-      char errmsg[100];
-      sprintf(errmsg, "load sdk fail: %s", dlerror());
-      Napi::Error::New(info.Env(), errmsg).ThrowAsJavaScriptException();
+      // printf("load sdk fail: %s", dlerror());
+
+      // sprintf(errmsg, "%s", dlerror());
+      Napi::Error::New(info.Env(), "load sdk fail: " + std::string(dlerror())).ThrowAsJavaScriptException();
       return Napi::Number::New(info.Env(), 1);
     }
   }
@@ -66,9 +67,8 @@ Napi::Value InitSDK(const Napi::CallbackInfo &info)
       DestroySdk_t *DestroySdk = (DestroySdk_t *)dlsym(so_handle, "DestroySdk");
       DestroySdk(sdk);
       // printf("init sdk err ret:%d\n", ret);
-      char errmsg[100];
-      sprintf(errmsg, "init sdk err ret:%d\n", ret);
-      Napi::Error::New(info.Env(), errmsg).ThrowAsJavaScriptException();
+      // sprintf(errmsg, "init sdk err ret:%d\n", ret);
+      Napi::Error::New(info.Env(), +"init sdk err ret: " + std::string(dlerror())).ThrowAsJavaScriptException();
       return Napi::Number::New(info.Env(), 1);
       // return Napi::Number::New(info.Env(), -2);
     }
@@ -98,9 +98,9 @@ Napi::Value GetChatDataMethod(const Napi::CallbackInfo &info)
     FreeSlice(chatDatas);
     // printf("GetChatData err ret:%d\n", ret);
     // return Napi::Number::New(info.Env(), -3);
-    char errmsg[100];
-    sprintf(errmsg, "GetChatData error ret:%d\n", ret);
-    Napi::Error::New(info.Env(), errmsg).ThrowAsJavaScriptException();
+    // char errmsg[100];
+    // sprintf(errmsg, "GetChatData error ret:%d\n", ret);
+    Napi::Error::New(info.Env(), "GetChatData error ret: " + std::string(dlerror())).ThrowAsJavaScriptException();
     return Napi::Number::New(info.Env(), 1);
   }
   // printf("GetChatData len:%d data:%s\n", chatDatas->len, chatDatas->buf);
@@ -125,10 +125,10 @@ Napi::String DecryptDataMethod(const Napi::CallbackInfo &info)
   if (ret != 0)
   {
     FreeSlice(Msgs);
-    char errmsg[100];
-    sprintf(errmsg, "DecryptData error ret:%d\n", ret);
-    Napi::Error::New(info.Env(), errmsg).ThrowAsJavaScriptException();
-    return Napi::String::New(info.Env(), errmsg);
+    // char errmsg[100];
+    // sprintf(errmsg, "DecryptData error ret:%d\n", ret);
+    Napi::Error::New(info.Env(), "DecryptData error ret: " + std::string(dlerror())).ThrowAsJavaScriptException();
+    return Napi::String::New(info.Env(), "DecryptData error ret: " + std::string(dlerror()));
     // printf("DecryptData err ret:%d\n", ret);
     // return Napi::String::New(info.Env(), "-3");
   }

@@ -1,15 +1,21 @@
 {
   "name": "wework-message",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "node ./scripts/post-install.js",
+    "prepublish": "node-gyp rebuild"
   },
   "author": "",
   "license": "ISC",
   "typings": "./index.d.ts",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
+  },
   "dependencies": {
+    "copy": "^0.3.2",
     "node-addon-api": "*",
     "node-gyp": "^7.1.2"
   }

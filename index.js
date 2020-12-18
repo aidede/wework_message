@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const wework = require("./build/Release/wework.node");
 
+
 class WeWork {
   constructor(config) {
     const { corpid, secret, pk } = config;
