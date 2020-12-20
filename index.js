@@ -7,7 +7,11 @@ class WeWork {
   constructor(config) {
     const { corpid, secret, pk } = config;
     this.pk = pk;
-    wework.init(corpid, secret, path.resolve(__dirname, "./lib/libWeWorkFinanceSdk_C.so"));
+    wework.init(
+      corpid,
+      secret,
+      path.resolve(__dirname, "./lib/libWeWorkFinanceSdk_C.so")
+    );
   }
 
   getChatData(seq, limit = 1000, timeout = 60) {
@@ -50,7 +54,10 @@ class WeWork {
       )
       .toString("utf-8");
     const decryptData = wework.decryptData(randomKey, encrypt_chat_msg);
-    return JSON.parse(decryptData);
+    const decryptMsg = JSON.parse(decryptData);
+    decryptMsg.seq = msg.seq;
+    decryptMsg.raw = msg;
+    return decryptMsg;
   }
 
   getMediaData(id, savedFilepath) {
