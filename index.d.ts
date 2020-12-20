@@ -426,7 +426,7 @@ declare module "wework-message" {
       limit: number,
       timeout: number
     ): DecryptChatData[];
-    decryptData(msg: ChatData): ChatData;
+    decryptData(msg: ChatData): DecryptChatData;
     getMediaData(id: string, savedFilepath: string): string;
   }
 }
