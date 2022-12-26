@@ -4,6 +4,7 @@
 #include "WeWorkFinanceSdk_C.h"
 #include <openssl/sha.h>
 #include <openssl/crypto.h>
+#include <map>
 // #include <openssl/rsa.h>
 // #include <openssl/pem.h>
 // #include <alibabacloud/oss/OssClient.h>
@@ -26,8 +27,33 @@ typedef void FreeMediaData_t(MediaData_t *);
 
 std::string val = "";
 void *so_handle;
-WeWorkFinanceSdk_t *sdk;
+// WeWorkFinanceSdk_t *sdk;
 std::string privateKey = "";
+
+std::map<std::string, WeWorkFinanceSdk_t *> sdkMaps;
+
+WeWorkFinanceSdk_t *GetSDK(std::string corp_id)
+{
+  return sdkMaps.at(corp_id);
+}
+
+void SetSDK(std::string corp_id, WeWorkFinanceSdk_t *sdk)
+{
+  sdkMaps[corp_id] = sdk;
+}
+
+bool CheckSDKExists(std::string corp_id)
+{
+  try
+  {
+    sdkMaps.at(corp_id);
+    return true;
+  }
+  catch (const std::out_of_range &)
+  {
+    return false;
+  }
+}
 
 Napi::String SetValue(const Napi::CallbackInfo &info)
 {
@@ -43,6 +69,9 @@ Napi::String GetValue(const Napi::CallbackInfo &info)
 
 Napi::Value InitSDK(const Napi::CallbackInfo &info)
 {
+  std::string corpid = info[0].As<Napi::String>();
+  std::string secret = info[1].As<Napi::String>();
+
   if (!so_handle)
   {
     std::string libfile = info[2].As<Napi::String>();
@@ -53,13 +82,14 @@ Napi::Value InitSDK(const Napi::CallbackInfo &info)
       return Napi::Number::New(info.Env(), 1);
     }
   }
-  if (!sdk)
+
+  if (!CheckSDKExists(corpid))
   {
     newsdk_t *NewSdk = (newsdk_t *)dlsym(so_handle, "NewSdk");
     Init_t *Init = (Init_t *)dlsym(so_handle, "Init");
-    sdk = NewSdk();
-    std::string corpid = info[0].As<Napi::String>();
-    std::string secret = info[1].As<Napi::String>();
+
+    WeWorkFinanceSdk_t *sdk = NewSdk();
+
     int ret = Init(sdk, corpid.c_str(), secret.c_str());
     if (ret != 0)
     {
@@ -71,6 +101,7 @@ Napi::Value InitSDK(const Napi::CallbackInfo &info)
       return Napi::Number::New(info.Env(), 1);
       // return Napi::Number::New(info.Env(), -2);
     }
+    SetSDK(corpid, sdk);
   }
   // printf("create sdk success %s", privateKey.c_str());
   return Napi::Number::New(info.Env(), 0);
@@ -82,9 +113,11 @@ Napi::Value GetChatDataMethod(const Napi::CallbackInfo &info)
   bool lossless1;
   bool lossless2;
 
-  uint64_t iSeq = info[0].As<Napi::BigInt>().Uint64Value(&lossless0);    // 从指定的seq开始拉取消息，注意的是返回的消息从seq+1开始返回，seq为之前接口返回的最大seq值。首次使用请使用seq:0
-  uint64_t iLimit = info[1].As<Napi::BigInt>().Uint64Value(&lossless1);  // 一次拉取的消息条数，最大值1000条，超过1000条会返回错误
-  uint64_t timeout = info[2].As<Napi::BigInt>().Uint64Value(&lossless2); // 超时时间，单位秒
+  WeWorkFinanceSdk_t *sdk = GetSDK(info[0].As<Napi::String>());
+
+  uint64_t iSeq = info[1].As<Napi::BigInt>().Uint64Value(&lossless0);    // 从指定的seq开始拉取消息，注意的是返回的消息从seq+1开始返回，seq为之前接口返回的最大seq值。首次使用请使用seq:0
+  uint64_t iLimit = info[2].As<Napi::BigInt>().Uint64Value(&lossless1);  // 一次拉取的消息条数，最大值1000条，超过1000条会返回错误
+  uint64_t timeout = info[3].As<Napi::BigInt>().Uint64Value(&lossless2); // 超时时间，单位秒
   NewSlice_t *NewSlice = (NewSlice_t *)dlsym(so_handle, "NewSlice");
   FreeSlice_t *FreeSlice = (FreeSlice_t *)dlsym(so_handle, "FreeSlice");
   GetContentFromSlice_t *GetContentFromSlice = (GetContentFromSlice_t *)dlsym(so_handle, "GetContentFromSlice");
@@ -138,10 +171,11 @@ Napi::String DecryptDataMethod(const Napi::CallbackInfo &info)
 
 Napi::Value GetMediaDataMethod(const Napi::CallbackInfo &info)
 {
-  std::string sdkfileid = info[0].As<Napi::String>();
-  std::string fileName = info[1].As<Napi::String>();
+  WeWorkFinanceSdk_t *sdk = GetSDK(info[0].As<Napi::String>());
+  std::string sdkfileid = info[1].As<Napi::String>();
+  std::string fileName = info[2].As<Napi::String>();
 
-  //拉取媒体文件
+  // 拉取媒体文件
   std::string index;
   uint64_t timeout = strtoul("60", NULL, 10);
   int isfinish = 0;
@@ -150,16 +184,16 @@ Napi::Value GetMediaDataMethod(const Napi::CallbackInfo &info)
   NewMediaData_t *newmediadata_fn = (NewMediaData_t *)dlsym(so_handle, "NewMediaData");
   FreeMediaData_t *freemediadata_fn = (FreeMediaData_t *)dlsym(so_handle, "FreeMediaData");
 
-  //媒体文件每次拉取的最大size为512k，因此超过512k的文件需要分片拉取。若该文件未拉取完整，mediaData中的is_finish会返回0，同时mediaData中的outindexbuf会返回下次拉取需要传入GetMediaData的indexbuf。
-  //indexbuf一般格式如右侧所示，”Range:bytes=524288-1048575“，表示这次拉取的是从524288到1048575的分片。单个文件首次拉取填写的indexbuf为空字符串，拉取后续分片时直接填入上次返回的indexbuf即可。
+  // 媒体文件每次拉取的最大size为512k，因此超过512k的文件需要分片拉取。若该文件未拉取完整，mediaData中的is_finish会返回0，同时mediaData中的outindexbuf会返回下次拉取需要传入GetMediaData的indexbuf。
+  // indexbuf一般格式如右侧所示，”Range:bytes=524288-1048575“，表示这次拉取的是从524288到1048575的分片。单个文件首次拉取填写的indexbuf为空字符串，拉取后续分片时直接填入上次返回的indexbuf即可。
   while (isfinish == 0)
   {
-    //每次使用GetMediaData拉取存档前需要调用NewMediaData获取一个mediaData，在使用完mediaData中数据后，还需要调用FreeMediaData释放。
+    // 每次使用GetMediaData拉取存档前需要调用NewMediaData获取一个mediaData，在使用完mediaData中数据后，还需要调用FreeMediaData释放。
     MediaData_t *mediaData = newmediadata_fn();
     int ret = getmediadata_fn(sdk, index.c_str(), sdkfileid.c_str(), NULL, NULL, timeout, mediaData);
     if (ret != 0)
     {
-      //单个分片拉取失败建议重试拉取该分片，避免从头开始拉取。
+      // 单个分片拉取失败建议重试拉取该分片，避免从头开始拉取。
       freemediadata_fn(mediaData);
       printf("GetMediaData err ret:%d\n", ret);
       Napi::Error::New(info.Env(), "GetMediaData err ret: " + std::to_string(ret)).ThrowAsJavaScriptException();
@@ -168,8 +202,8 @@ Napi::Value GetMediaDataMethod(const Napi::CallbackInfo &info)
     }
     // printf("content size:%d isfin:%d outindex:%s\n", mediaData->data_len, mediaData->is_finish, mediaData->outindexbuf);
 
-    //大于512k的文件会分片拉取，此处需要使用追加写，避免后面的分片覆盖之前的数据。
-    // snprintf(file, sdkfileid.size(), "%s", sdkfileid.c_str());
+    // 大于512k的文件会分片拉取，此处需要使用追加写，避免后面的分片覆盖之前的数据。
+    //  snprintf(file, sdkfileid.size(), "%s", sdkfileid.c_str());
     FILE *fp = fopen(fileName.c_str(), "ab+");
     // printf("filename:%s \n", file);
     if (NULL == fp)
@@ -184,7 +218,7 @@ Napi::Value GetMediaDataMethod(const Napi::CallbackInfo &info)
     fwrite(mediaData->data, mediaData->data_len, 1, fp);
     fclose(fp);
 
-    //获取下次拉取需要使用的indexbuf
+    // 获取下次拉取需要使用的indexbuf
     index.assign(std::string(mediaData->outindexbuf));
     isfinish = mediaData->is_finish;
     freemediadata_fn(mediaData);

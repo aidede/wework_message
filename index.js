@@ -7,6 +7,8 @@ class WeWork {
   constructor(config) {
     const { corpid, secret, pk } = config;
     this.pk = pk;
+    this.corpid = corpid;
+
     wework.init(
       corpid,
       secret,
@@ -16,6 +18,7 @@ class WeWork {
 
   getChatData(seq, limit = 1000, timeout = 60) {
     const data = wework.getChatData(
+      this.corpid,
       BigInt(seq),
       BigInt(limit),
       BigInt(timeout)
@@ -61,7 +64,7 @@ class WeWork {
   }
 
   getMediaData(id, savedFilepath) {
-    wework.getMediaData(id, savedFilepath);
+    wework.getMediaData(this.corpid, id, savedFilepath);
     return savedFilepath;
   }
 }

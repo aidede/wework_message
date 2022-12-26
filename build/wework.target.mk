@@ -40,13 +40,13 @@ CFLAGS_CC_Debug := \
 	-std=gnu++1y
 
 INCS_Debug := \
-	-I/home/wenlei/.cache/node-gyp/15.4.0/include/node \
-	-I/home/wenlei/.cache/node-gyp/15.4.0/src \
-	-I/home/wenlei/.cache/node-gyp/15.4.0/deps/openssl/config \
-	-I/home/wenlei/.cache/node-gyp/15.4.0/deps/openssl/openssl/include \
-	-I/home/wenlei/.cache/node-gyp/15.4.0/deps/uv/include \
-	-I/home/wenlei/.cache/node-gyp/15.4.0/deps/zlib \
-	-I/home/wenlei/.cache/node-gyp/15.4.0/deps/v8/include \
+	-I/home/wenlei/.cache/node-gyp/14.21.1/include/node \
+	-I/home/wenlei/.cache/node-gyp/14.21.1/src \
+	-I/home/wenlei/.cache/node-gyp/14.21.1/deps/openssl/config \
+	-I/home/wenlei/.cache/node-gyp/14.21.1/deps/openssl/openssl/include \
+	-I/home/wenlei/.cache/node-gyp/14.21.1/deps/uv/include \
+	-I/home/wenlei/.cache/node-gyp/14.21.1/deps/zlib \
+	-I/home/wenlei/.cache/node-gyp/14.21.1/deps/v8/include \
 	-I$(srcdir)/node_modules/node-addon-api
 
 DEFS_Release := \
@@ -84,13 +84,13 @@ CFLAGS_CC_Release := \
 	-std=gnu++1y
 
 INCS_Release := \
-	-I/home/wenlei/.cache/node-gyp/15.4.0/include/node \
-	-I/home/wenlei/.cache/node-gyp/15.4.0/src \
-	-I/home/wenlei/.cache/node-gyp/15.4.0/deps/openssl/config \
-	-I/home/wenlei/.cache/node-gyp/15.4.0/deps/openssl/openssl/include \
-	-I/home/wenlei/.cache/node-gyp/15.4.0/deps/uv/include \
-	-I/home/wenlei/.cache/node-gyp/15.4.0/deps/zlib \
-	-I/home/wenlei/.cache/node-gyp/15.4.0/deps/v8/include \
+	-I/home/wenlei/.cache/node-gyp/14.21.1/include/node \
+	-I/home/wenlei/.cache/node-gyp/14.21.1/src \
+	-I/home/wenlei/.cache/node-gyp/14.21.1/deps/openssl/config \
+	-I/home/wenlei/.cache/node-gyp/14.21.1/deps/openssl/openssl/include \
+	-I/home/wenlei/.cache/node-gyp/14.21.1/deps/uv/include \
+	-I/home/wenlei/.cache/node-gyp/14.21.1/deps/zlib \
+	-I/home/wenlei/.cache/node-gyp/14.21.1/deps/v8/include \
 	-I$(srcdir)/node_modules/node-addon-api
 
 OBJS := \
